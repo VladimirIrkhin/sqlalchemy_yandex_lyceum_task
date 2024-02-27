@@ -1,0 +1,55 @@
+h4 {
+  color: gray;
+  padding-left: 20px;
+}
+
+h2 {
+    text-align: center
+}
+
+.logo {
+  background-image: url("img/logo.png");
+  background-repeat: no-repeat;
+  background-size: contain;
+  padding-left: 80px;
+}
+
+.image-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.header {
+  background-color: lightgray;
+  margin: 0;
+}
+
+.header-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  background-color: white;
+  padding: 10px;
+  text-align: center;
+}
+
+.main-container {
+  width: 100%;
+  max-width: 600px;
+  padding: 20px;
+}
+
+.my-table {
+  border-collapse: collapse;
+  margin: auto
+}
+
+.my-table th{
+  padding: 10px;
+  background-color: lightgray
+}
+
+.my-table td {
+  padding: 20px;
+  background-color: rgb(200, 200, 255)
+}
