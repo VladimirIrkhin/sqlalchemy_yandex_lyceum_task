@@ -1,7 +1,8 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, request
 from data.db_session import create_session, global_init
 from data.users import User
 from data.jobs import Jobs
+from data.registerform import RegisterForm
 import datetime
 
 
@@ -58,7 +59,30 @@ def table():
     return render_template('table.html', jobs_and_leaders=jobs_and_leaders)
 
 
-@app.route('/')
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm()
+    if form.validate_on_submit():
+        user = User()
+        user.surname = request.form['surname']
+        user.name = request.form['name']
+        user.age = request.form['age']
+        user.position = request.form['position']
+        user.speciality = request.form['speciality']
+        user.address = request.form['address']
+        user.email = request.form['email']
+        user.set_password(request.form['password'])
+        user.modified_date = datetime.datetime.now()
+
+        db_sess.add(user)
+        db_sess.commit()
+
+        return redirect('/index')
+
+    return render_template('register.html', form=form)
+
+
+@app.route('/index')
 def index():
     return render_template('base.html')
 
