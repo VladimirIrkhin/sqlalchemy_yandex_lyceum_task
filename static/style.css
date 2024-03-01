@@ -53,3 +53,9 @@ h2 {
   padding: 20px;
   background-color: rgb(200, 200, 255)
 }
+
+nav {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
