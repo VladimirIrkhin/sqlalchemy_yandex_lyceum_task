@@ -84,6 +84,7 @@ def load_user(user_id):
     return db_sess.query(User).get(user_id)
 
 
+@app.route("/")
 @app.route('/table')
 def table():
     jobs_and_leaders = [(job, db_sess.query(User).filter(User.id == int(job.team_leader)).first())
@@ -148,8 +149,7 @@ def add_news():
         db_sess.merge(current_user)
         db_sess.commit()
         return redirect('/')
-    return render_template('news.html', title='Добавление новости',
-                           form=form)
+    return render_template('news.html', title='Добавление новости', form=form)
 
 
 @app.route('/news/<int:id>', methods=['GET', 'POST'])
@@ -157,9 +157,7 @@ def add_news():
 def edit_news(id):
     form = NewsForm()
     if request.method == "GET":
-        news = db_sess.query(News).filter(News.id == id,
-                                          News.user == current_user
-                                          ).first()
+        news = db_sess.query(News).filter(News.id == id, News.user == current_user).first()
         if news:
             form.title.data = news.title
             form.content.data = news.content
@@ -167,9 +165,7 @@ def edit_news(id):
         else:
             abort(404)
     if form.validate_on_submit():
-        news = db_sess.query(News).filter(News.id == id,
-                                          News.user == current_user
-                                          ).first()
+        news = db_sess.query(News).filter(News.id == id, News.user == current_user).first()
         if news:
             news.title = form.title.data
             news.content = form.content.data
@@ -178,10 +174,7 @@ def edit_news(id):
             return redirect('/')
         else:
             abort(404)
-    return render_template('news.html',
-                           title='Редактирование новости',
-                           form=form
-                           )
+    return render_template('news.html', title='Редактирование новости', form=form)
 
 
 @app.route('/news_delete/<int:id>', methods=['GET', 'POST'])
@@ -202,7 +195,7 @@ def add_job():
     form = JobForm()
     if form.validate_on_submit():
         job = Jobs()
-        job.title = form.title.data
+        job.job = form.title.data
         job.team_leader = form.team_leader_id.data
         job.work_size = form.work_size.data
         job.collaborators = form.collaborators.data
@@ -213,6 +206,50 @@ def add_job():
         return redirect('/table')
     return render_template('job.html', title='Добавление работы',
                            form=form)
+
+
+@app.route('/job/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_job(id):
+    form = JobForm()
+    if request.method == "GET":
+        job = db_sess.query(Jobs).filter(Jobs.id == id).first()   #
+
+        print(job.team_leader == current_user.id)
+
+        if job and (job.team_leader == current_user.id or current_user.id == 1):
+            form.title.data = job.job
+            form.team_leader_id.data = job.team_leader
+            form.work_size.data = job.work_size
+            form.collaborators.data = job.collaborators
+            form.is_finished.data = job.is_finished
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        job = db_sess.query(Jobs).filter(Jobs.id == id).first()
+        if job and (job.team_leader == current_user.id or current_user.id == 1):
+            job.job = form.title.data
+            job.team_leader = form.team_leader_id.data
+            job.work_size = form.work_size.data
+            job.collaborators = form.collaborators.data
+            job.is_finished = form.is_finished.data
+            db_sess.commit()
+            return redirect('/')
+        else:
+            abort(404)
+    return render_template('job.html', title='Редактирование работы', form=form)
+
+
+@app.route('/job_delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def job_delete(id):
+    job = db_sess.query(Jobs).filter(Jobs.id == id).first()
+    if job and (job.team_leader == current_user.id or current_user.id == 1):
+        db_sess.delete(job)
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/')
 
 
 @app.route("/cookie_test")
@@ -239,7 +276,6 @@ def session_test():
         f"Вы пришли на эту страницу {visits_count + 1} раз")
 
 
-@app.route("/")
 @app.route('/index')
 def index():
     if current_user.is_authenticated:

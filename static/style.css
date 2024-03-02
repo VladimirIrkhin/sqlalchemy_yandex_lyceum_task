@@ -41,7 +41,6 @@ h2 {
 
 .my-table {
   border-collapse: collapse;
-  margin: auto
 }
 
 .my-table th{
@@ -58,4 +57,8 @@ nav {
   position: absolute;
   top: 0;
   right: 0;
+}
+
+.btn {
+  background-color: gray;
 }
