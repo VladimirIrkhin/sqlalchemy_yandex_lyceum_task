@@ -7,6 +7,7 @@ from data.news import News
 from data.forms.registerform import RegisterForm
 from data.forms.loginform import LoginForm
 from data.forms.newsform import NewsForm
+from data.forms.jobform import JobForm
 import datetime
 
 
@@ -193,6 +194,25 @@ def news_delete(id):
     else:
         abort(404)
     return redirect('/')
+
+
+@app.route('/job',  methods=['GET', 'POST'])
+@login_required
+def add_job():
+    form = JobForm()
+    if form.validate_on_submit():
+        job = Jobs()
+        job.title = form.title.data
+        job.team_leader = form.team_leader_id.data
+        job.work_size = form.work_size.data
+        job.collaborators = form.collaborators.data
+        job.is_finished = form.is_finished.data
+
+        db_sess.add(job)
+        db_sess.commit()
+        return redirect('/table')
+    return render_template('job.html', title='Добавление работы',
+                           form=form)
 
 
 @app.route("/cookie_test")
