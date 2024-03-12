@@ -11,6 +11,7 @@ from data.forms.newsform import NewsForm
 from data.forms.jobform import JobForm
 from data import news_resources, user_resources, job_resources
 import datetime
+import os
 
 
 app = Flask(__name__)
@@ -30,7 +31,8 @@ login_manager.init_app(app)
 
 def main():
     global_init('db/blogs.db')
-    app.run(port=8080, host='127.0.0.1')
+    port = int(os.environ.get("PORT", 5000))
+    app.run(port=port, host='0.0.0.0')
 
 
 @login_manager.user_loader
