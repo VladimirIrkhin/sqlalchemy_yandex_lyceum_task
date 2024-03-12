@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, request, make_response, session, abort
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_restful import Api
 from data.db_session import create_session, global_init
 from data.users import User
 from data.jobs import Jobs
@@ -8,85 +9,40 @@ from data.forms.registerform import RegisterForm
 from data.forms.loginform import LoginForm
 from data.forms.newsform import NewsForm
 from data.forms.jobform import JobForm
+from data import news_resources, user_resources, job_resources
 import datetime
 
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=365)
+api = Api(app)
+api.add_resource(news_resources.NewsListResource, '/api/v2/news')
+api.add_resource(news_resources.NewsResource, '/api/v2/news/<int:news_id>')
+api.add_resource(user_resources.UserResource, '/api/v2/users/<int:user_id>')
+api.add_resource(user_resources.UserListResource, '/api/v2/users')
+api.add_resource(job_resources.JobResource, '/api/v2/jobs/<int:job_id>')
+api.add_resource(job_resources.JobListResource, '/api/v2/jobs')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-def create_people(db_sess):
-    data = [{'surname': 'Scott', 'name': 'Ridley', 'age': 21, 'position': 'captain', 'speciality': 'research engineer',
-             'address': 'module_1', 'email': 'scott_chief@mars.org'},
-            {'surname': 'Scott1', 'name': 'Ridley1', 'age': 20, 'position': 'no_captain', 'speciality': 'cool engineer',
-             'address': 'module_2', 'email': 'scott1_chief@mars.org'},
-            {'surname': 'Scott2', 'name': 'Ridley2', 'age': 19, 'position': 'no_captain', 'speciality': 'cool engineer',
-             'address': 'module_2', 'email': 'scott2_chief@mars.org'},
-            {'surname': 'Scott3', 'name': 'Ridley3', 'age': 18, 'position': 'no_captain', 'speciality': 'cool engineer',
-             'address': 'module_2', 'email': 'scott3_chief@mars.org'}]
-
-    for i in data:
-        user = User()
-        user.surname = i['surname']
-        user.name = i['name']
-        user.age = i['age']
-        user.position = i['position']
-        user.speciality = i['speciality']
-        user.address = i['address']
-        user.email = i['email']
-
-        db_sess.add(user)
-
-    db_sess.commit()
-
-
-def create_job(db_sess):
-    job = Jobs()
-    job.team_leader = 1
-    job.job = 'deployment of residential modules 1 and 2'
-    job.work_size = 15
-    job.collaborators = '2, 3'
-    job.start_date = datetime.datetime.now()
-    job.is_finished = False
-
-    db_sess.add(job)
-    db_sess.commit()
-
-
-def create_news(db_sess):
-    news = News(title="Первая новость", content="Привет блог!",
-                user_id=1, is_private=False)
-    db_sess.add(news)
-
-    user = db_sess.query(User).filter(User.id == 1).first()
-    news = News(title="Вторая новость", content="Уже вторая запись!",
-                user=user, is_private=False)
-    db_sess.add(news)
-
-    user = db_sess.query(User).filter(User.id == 1).first()
-    news = News(title="Личная запись", content="Эта запись личная",
-                is_private=True)
-    user.news.append(news)
-
-    db_sess.commit()
-
-
 def main():
+    global_init('db/blogs.db')
     app.run(port=8080, host='127.0.0.1')
 
 
 @login_manager.user_loader
 def load_user(user_id):
+    db_sess = create_session()
     return db_sess.query(User).get(user_id)
 
 
 @app.route("/")
 @app.route('/table')
 def table():
+    db_sess = create_session()
     jobs_and_leaders = [(job, db_sess.query(User).filter(User.id == int(job.team_leader)).first())
                         for job in db_sess.query(Jobs).all()]
     return render_template('table.html', jobs_and_leaders=jobs_and_leaders)
@@ -94,6 +50,7 @@ def table():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    db_sess = create_session()
     form = RegisterForm()
     if form.validate_on_submit():
         user = User()
@@ -117,6 +74,7 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    db_sess = create_session()
     form = LoginForm()
     if form.validate_on_submit():
         user = db_sess.query(User).filter(User.email == form.email.data).first()
@@ -139,6 +97,7 @@ def logout():
 @app.route('/news',  methods=['GET', 'POST'])
 @login_required
 def add_news():
+    db_sess = create_session()
     form = NewsForm()
     if form.validate_on_submit():
         news = News()
@@ -155,6 +114,7 @@ def add_news():
 @app.route('/news/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_news(id):
+    db_sess = create_session()
     form = NewsForm()
     if request.method == "GET":
         news = db_sess.query(News).filter(News.id == id, News.user == current_user).first()
@@ -180,6 +140,7 @@ def edit_news(id):
 @app.route('/news_delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def news_delete(id):
+    db_sess = create_session()
     news = db_sess.query(News).filter(News.id == id, News.user == current_user).first()
     if news:
         db_sess.delete(news)
@@ -192,6 +153,7 @@ def news_delete(id):
 @app.route('/job',  methods=['GET', 'POST'])
 @login_required
 def add_job():
+    db_sess = create_session()
     form = JobForm()
     if form.validate_on_submit():
         job = Jobs()
@@ -211,6 +173,7 @@ def add_job():
 @app.route('/job/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_job(id):
+    db_sess = create_session()
     form = JobForm()
     if request.method == "GET":
         job = db_sess.query(Jobs).filter(Jobs.id == id).first()   #
@@ -243,6 +206,7 @@ def edit_job(id):
 @app.route('/job_delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def job_delete(id):
+    db_sess = create_session()
     job = db_sess.query(Jobs).filter(Jobs.id == id).first()
     if job and (job.team_leader == current_user.id or current_user.id == 1):
         db_sess.delete(job)
@@ -278,6 +242,7 @@ def session_test():
 
 @app.route('/index')
 def index():
+    db_sess = create_session()
     if current_user.is_authenticated:
         news = db_sess.query(News).filter(
             (News.user == current_user) | (News.is_private != True))
@@ -287,6 +252,4 @@ def index():
 
 
 if __name__ == '__main__':
-    global_init('db/blogs.db')
-    db_sess = create_session()
     main()
